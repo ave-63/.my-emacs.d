@@ -1,0 +1,9 @@
+#Ignore everything...
+*
+
+#... except thise file
+!.gitignore
+!init.el
+!zenburnt-theme.el
+
+!*/
