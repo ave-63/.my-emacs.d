@@ -73,7 +73,7 @@
 (use-package emacs
   :config 
   (load-theme 'zenburnt t)
-  (set-frame-font "Fira Code 12" nil t)
+  (set-frame-font "Fira Code 11" nil t)
   (menu-bar-mode -1)
   (tool-bar-mode -1)
   (scroll-bar-mode -1)
@@ -160,35 +160,75 @@
   :after openwith
   :ensure t
   :config
-
+  
+  ;I'm replacing fzf with counsel jump!
   (defun ben/file-fzf (dir)
     (let ((counsel-fzf-cmd "fd --hidden --type f --color never | fzf -f \"%s\"")
-	  (ben/fzf-dir-or-not t)) ;result is a dir and needs a / at end
+	  (ben/fzf-dir-or-not nil)) ;result is a dir and needs a / at end
       (counsel-fzf nil dir)))
 
   (defun ben/dir-fzf (dir)
     (let ((counsel-fzf-cmd "fd --hidden --type d --color never | fzf -f \"%s\"")
-	  (ben/fzf-dir-or-not nil)) ;result is a file and needs the file name stripped
+	  (ben/fzf-dir-or-not t)) ;result is a file and needs the file name stripped
     (counsel-fzf nil dir)))
 
   (global-set-key (kbd "s-C-,") #'(lambda () (interactive)
-				    (ben/dir-fzf "~/")
-				    (setq ben/base-dir "~/")))
+				    (setq ben/base-dir "~/")
+				    (ben/dir-fzf "~/")))
   (global-set-key (kbd "s-C-.") #'(lambda () (interactive)
-				    (ben/dir-fzf default-directory)
-				    (setq ben/base-dir default-directory)))
+				    (setq ben/base-dir default-directory)
+				    (ben/dir-fzf default-directory)))
   (global-set-key (kbd "s-C-/") #'(lambda () (interactive)
-				    (ben/dir-fzf "/")
-				    (setq ben/base-dir "/")))
+				    (setq ben/base-dir "/")
+				    (ben/dir-fzf "/")))
   (global-set-key (kbd "s-,") #'(lambda () (interactive)
-				  (ben/file-fzf "~/")
-				  (setq ben/base-dir "~/")))
+				  (setq ben/base-dir "~/")
+				  (ben/file-fzf "~/")))
   (global-set-key (kbd "s-.") #'(lambda () (interactive)
-				  (ben/file-fzf default-directory)
-				  (setq ben/base-dir default-directory)))
+				  (setq ben/base-dir default-directory)
+				  (ben/file-fzf default-directory)))
   (global-set-key (kbd "s-/") #'(lambda () (interactive)
-				  (ben/file-fzf "/")
-				  (setq ben/base-dir "/")))
+				  (setq ben/base-dir "/")
+				  (ben/file-fzf "/")))
+
+  (defun ben/ag (arg)
+    "Grep in this directory"
+    (let* ((ben/root (if (file-name-absolute-p arg)
+			arg
+		       (expand-file-name arg ben/base-dir)))
+	   (ben/dir (if ben/fzf-dir-or-not
+			 ben/root
+		       (expand-file-name (concat (file-name-as-directory ben/root) "..")))))
+      (counsel-ag nil ben/dir nil (concat "grep in " ben/dir ":"))));initial input, directory, prompt
+  
+  ;; This did not work, and was much slower than fzf.
+  ;; (defun ben/file-jump (dir)
+  ;;   (let ((ben/fzf-dir-or-not nil))
+  ;;     (counsel-file-jump nil dir)))
+  
+  ;; (defun ben/dir-jump (dir)
+  ;;   (let ((ben/fzf-dir-or-not t))
+  ;;     (counsel-dired-jump nil dir)))
+  
+  ;; (global-set-key (kbd "s-C-,") #'(lambda () (interactive)
+  ;; 				    (ben/dir-jump "~/")
+  ;; 				    (setq ben/base-dir "~/")))
+  ;; (global-set-key (kbd "s-C-.") #'(lambda () (interactive)
+  ;; 				    (ben/dir-jump default-directory)
+  ;; 				    (setq ben/base-dir default-directory)))
+  ;; (global-set-key (kbd "s-C-/") #'(lambda () (interactive)
+  ;; 				    (ben/dir-jump "/")
+  ;; 				    (setq ben/base-dir "/")))
+  ;; (global-set-key (kbd "s-,") #'(lambda () (interactive)
+  ;; 				  (ben/file-jump "~/")
+  ;; 				  (setq ben/base-dir "~/")))
+  ;; (global-set-key (kbd "s-.") #'(lambda () (interactive)
+  ;; 				  (ben/file-jump default-directory)
+  ;; 				  (setq ben/base-dir default-directory)))
+  ;; (global-set-key (kbd "s-/") #'(lambda () (interactive)
+  ;; 				  (ben/file-jump "/")
+  ;; 				  (setq ben/base-dir "/")))
+  
   (defun ben/xournalpp (arg)
     "Open file in xournalpp"
     (openwith-open-unix "xournalpp" (list (if (file-name-absolute-p arg)
@@ -254,17 +294,74 @@
   (global-set-key (kbd "C-c a") 'org-agenda)
   (global-set-key (kbd "C-c l") 'org-store-link)
   (global-set-key (kbd "C-c c") 'org-capture)
+  (setq org-goto-interface 'outline-path-completion)
+  (setq org-outline-path-complete-in-steps nil)
   (define-key org-mode-map (kbd "s-j") 'org-next-visible-heading)
-  (define-key org-mode-map (kbd "s-k") 'org-previous-visibile-heading)
+  (define-key org-mode-map (kbd "s-k") 'org-previous-visible-heading)
   (define-key org-mode-map (kbd "s-h") 'outline-up-heading)
+  (define-key org-mode-map (kbd "M-j") 'org-metadown)
+  (define-key org-mode-map (kbd "M-k") 'org-metaup)
+  (define-key org-mode-map (kbd "M-l") 'org-metaright)
+  (define-key org-mode-map (kbd "M-h") 'org-metaleft)
   (define-key org-mode-map (kbd "<s-tab>") 'org-cycle)
+  (define-key org-mode-map (kbd "<C-tab>") nil)
+  (define-key org-mode-map (kbd "<M-return>") `sbr-org-insert-dwim)
   (setq org-startup-indented t)
   (setq org-cycle-emulate-tab nil)
+  (setq org-M-RET-may-split-line nil)
   (setq org-src-tab-acts-natively t)
-  (setq org-directory "~/org/")
+  (setq org-directory "~/org")
+  (setq org-default-notes-file (concat org-directory "/gtd.org"))
+  (defun sbr-org-insert-dwim (&optional arg)
+  "Insert another entry of the same type as the current
+entry. For example, if the point is on a list item, then add
+another list item of the same type, and if the point is on a
+checkbox list item, then add an empty checkbox item. If instead
+the point is in a heading, then add another heading. If the point 
+is in a TODO heading, then add another TODO heading (set to the 
+TODO state). 
+
+By default, the new entry is inserted below the current
+subtree/item. With a 'C-u' prefix, insert the entry above the
+current heading/item instead. Taken from https://www.reddit.com/r/orgmode/comments/boyu8r/function_for_dwim_insertion_of_new_entries/"
+  (interactive "P")
+  (when (eq major-mode 'org-mode)
+    (let ((org-special-ctrl-a/e t)
+	  (below? (unless  (equal arg '(4)) '(4))))
+      ;; hack to ensure that the point is not after ellipses because
+      ;; that would mess up org-at-item-p etc.
+      (org-beginning-of-line)
+      (cond ((org-at-item-p) ;; at list item or checkbox
+	     (let ((org-M-RET-may-split-line nil)
+		   (org-enable-sort-checkbox nil))
+	       ;; hack to make item be inserted after the current one
+	       ;; doesn't work if we are on an empty item line
+	       (when below?
+		 (org-end-of-line))                     
+	       (org-insert-item (org-at-item-checkbox-p))))
+	    ((org-before-first-heading-p) ;; above first heading
+	     (org-insert-heading))
+	    (t ;; in some kind of heading
+	     (org-back-to-heading)
+	     (if (org-get-todo-state)
+		 ;; at TODO heading
+		 (org-insert-todo-heading t below?)
+	       ;; at non-TODO heading 
+	       (org-insert-heading below?)))))))
+
+  (defun sbr-org-shift-return (&optional arg)
+    "If point is at a table, copy the table cell downward (i.e.,
+the usual effect of typing S-RET). Otherwise,  insert the same
+kind of heading or item as the current entry containing the
+point. "
+    (interactive "P")
+    (if (org-at-table-p)
+	(org-table-copy-down (prefix-numeric-value arg))
+      (sbr-org-insert-dwim arg)))
+  
   (setq org-agenda-skip-scheduled-if-done t
         org-todo-keywords '((sequence "TODO(t)" "WAITING(w)" "|" "DONE(d)" "SOMEDAY(s)" "CANCELLED(c)"))
-        org-agenda-files '("~/org/inbox.org" "~/org/gtd.org" "~/org/tickler.org"))
+        org-agenda-files '("~/org/inbox.org" "~/org/gtd.org"))
   ;(setq org-capture-templates
   ;      (doct `(("Binding" :keys "b"
   ;               :type entry
@@ -282,14 +379,14 @@
   ;               :file "~/org/inbox.org"
   ;               :headline "Tasks"
   ;               :template "* %i%?")
-  ;              ("Tickler" :keys "t"
-  ;               :type entry
-  ;               :file "~/org/tickler.org"
-  ;               :headline "Tickler"
-  ;               :template "* %i%? \n %U"))))
-  (setq org-refile-targets '(("~/org/gtd.org" :maxlevel . 3)
-                           ("~/org/someday.org" :level . 1)
-                           ("~/org/tickler.org" :maxlevel . 2)))
+                ;("Tickler" :keys "t"
+                ; :type entry
+                ; :file "~/org/tickler.org"
+                ; :headline "Tickler"
+                ; :template "* %i%? \n %U"))))
+  (setq org-refile-targets '(("~/org/gtd.org" :maxlevel . 4)))
+;                           ("~/org/someday.org" :level . 1)
+ ;                          ("~/org/tickler.org" :maxlevel . 2)))
   (setq process-connection-type nil))
 
 (use-package tex
