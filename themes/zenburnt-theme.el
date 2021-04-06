@@ -1578,7 +1578,7 @@ Also bind `class' to ((class color) (min-colors 89))."
                                             :underline t :overline t))))
 ;;;;; yascroll
    `(yascroll:thumb-text-area ((t (:background ,zenburnt-bg-1))))
-   `(yascroll:thumb-fringe ((t (:background ,zenburnt-bg-1 :foreground ,zenburnt-bg-1))))
+   `(yascroll:thumb-fringe ((t (:background ,zenburnt-yellow :foreground ,zenburnt-yellow))))
    ))
 
 ;;; Theme Variables

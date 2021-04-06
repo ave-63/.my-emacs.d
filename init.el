@@ -35,6 +35,10 @@
   :config
   (delight `((buffer-face-mode nil "face-remap"))))
 
+(use-package yascroll
+  :config
+  (global-yascroll-bar-mode 1)
+  (setq yascroll:delay-to-hide nil))
 
 (use-package magit)
 
@@ -44,9 +48,9 @@
   :init
   (setq evil-search-module "evil-search")
   (setq evil-cross-lines t)
-  (setq evil-respect-visual-line-mode t)
+  ;; (setq evil-respect-visual-line-mode t)
   (setq evil-want-fine-undo t)
-  (setq evil-undo-system 'undo-tree)
+  (setq evil-undo-system 'undo-fu)
   :config
   (evil-mode 1)
   (global-set-key (kbd "C-<tab>") 'evil-window-next)
@@ -64,11 +68,17 @@
   (push  '(91 . ("[" . "]")) evil-surround-pairs-alist)
   (push  '(123 . ("{" . "}")) evil-surround-pairs-alist))
 
-(use-package undo-tree
-  :ensure t
-  :diminish
+;(use-package undo-tree
+;  :ensure t
+;  :diminish
+;  :config
+;  (global-undo-tree-mode))
+
+(use-package undo-fu
   :config
-  (global-undo-tree-mode))
+  ;(global-undo-tree-mode -1)
+  (define-key evil-normal-state-map (kbd "C-/") 'undo-fu-only-undo)
+  (define-key evil-normal-state-map (kbd "C-?") 'undo-fu-only-redo))
 
 (use-package emacs
   :config 
@@ -77,7 +87,9 @@
   (menu-bar-mode -1)
   (tool-bar-mode -1)
   (scroll-bar-mode -1)
-  (global-visual-line-mode)
+  (setq mouse-wheel-scroll-amount '(1))
+  ;;(fringe-mode nil)
+  ;; (global-visual-line-mode)
   (setq visible-bell t)
   (setq inhibit-splash-screen t)
 ;  (setq meta-prefix-char nil) ;stops ESC from being weird ; breaks ALT completely!
@@ -91,7 +103,6 @@
   (global-set-key (kbd "s-2") 'split-window-below)
   (global-set-key (kbd "s-3") 'split-window-right)
   (global-set-key (kbd "s-4") 'ctl-x-4-prefix)
-  ;(set-scroll-bar-mode 'right) ; use this after getting theme/face right
 )
 
 (use-package avy
@@ -118,11 +129,8 @@
                                 ("\\.docx\\'" "soffice" (file))
                                 ("\\.pptx\\'" "soffice" (file))
                                 ("\\.csv\\'" "soffice" (file))
-                                ("\\.ods\\'" "soffice" (file)))))
-
-(use-package rg
-  :config
-  (rg-enable-default-bindings))
+                                ("\\.ods\\'" "soffice" (file))
+				("\\.xopp\\'" "xournalpp" (file)))))
 
 (use-package ivy
   :ensure t
@@ -135,10 +143,9 @@
   (global-set-key (kbd "s-f") 'counsel-find-file)
   (global-set-key (kbd "s-r") 'ivy-resume)
   (global-set-key (kbd "s-o") 'ivy-occur)
-  (global-set-key (kbd "s-f") 'counsel-find-file)
-  (global-set-key (kbd "s-b") 'counsel-switch-buffer)
+  (global-set-key (kbd "s-b") 'ivy-switch-buffer)
   (global-set-key (kbd "s-g") 'counsel-ag)
-  (global-set-key (kbd "C-s-b") 'counsel-switch-buffer-other-window)
+  (global-set-key (kbd "C-s-b") 'ivy-switch-buffer-other-window)
   (global-set-key (kbd "C-h f") 'counsel-describe-function)
   (global-set-key (kbd "C-h v") 'counsel-describe-variable)
   (define-key ivy-minibuffer-map (kbd "<C-return>") 'ivy-call)
@@ -152,16 +159,14 @@
   (setq ivy-fixed-height-minibuffer t)
   (setq ivy-magic-slash-non-match-action nil)
   (setq ivy-virtual-abbreviate 'full)
-;  (setf (alist-get 't ivy-format-functions-alist)
-        ;#'ivy-format-function-arrow)
-  (setq ivy-count-format "(%d/%d) "))
+  (setq ivy-count-format "(%d/%d) ")
+  (add-to-list 'ivy-re-builders-alist '(counsel-org-goto . ivy--regex-fuzzy)))
 
 (use-package counsel
   :after openwith
   :ensure t
   :config
-  
-  ;I'm replacing fzf with counsel jump!
+  (setq counsel-switch-buffer-preview-virtual-buffers nil)
   (defun ben/file-fzf (dir)
     (let ((counsel-fzf-cmd "fd --hidden --type f --color never | fzf -f \"%s\"")
 	  (ben/fzf-dir-or-not nil)) ;result is a dir and needs a / at end
@@ -299,6 +304,7 @@
   (define-key org-mode-map (kbd "s-j") 'org-next-visible-heading)
   (define-key org-mode-map (kbd "s-k") 'org-previous-visible-heading)
   (define-key org-mode-map (kbd "s-h") 'outline-up-heading)
+  (define-key org-mode-map (kbd "s-m") 'counsel-outline)
   (define-key org-mode-map (kbd "M-j") 'org-metadown)
   (define-key org-mode-map (kbd "M-k") 'org-metaup)
   (define-key org-mode-map (kbd "M-l") 'org-metaright)
@@ -307,6 +313,7 @@
   (define-key org-mode-map (kbd "<C-tab>") nil)
   (define-key org-mode-map (kbd "<M-return>") `sbr-org-insert-dwim)
   (setq org-startup-indented t)
+  (setq org-startup-truncated nil)
   (setq org-cycle-emulate-tab nil)
   (setq org-M-RET-may-split-line nil)
   (setq org-src-tab-acts-natively t)
@@ -387,15 +394,21 @@ point. "
   (setq org-refile-targets '(("~/org/gtd.org" :maxlevel . 4)))
 ;                           ("~/org/someday.org" :level . 1)
  ;                          ("~/org/tickler.org" :maxlevel . 2)))
-  (setq process-connection-type nil))
+  (setq process-connection-type t))
 
-(use-package tex
+(use-package ess-r-mode
+  :mode ("\\.r\\'" . ess-r-mode))
+
+(use-package latex
   :config
   (setq TeX-auto-save t)
   (setq TeX-parse-self t)
   (add-hook 'LaTeX-mode-hook (lambda ()
+			       (yas-minor-mode 1)
 			       (flyspell-mode)
 			       (TeX-source-correlate-mode)
+			       (setq-default TeX-engine 'xetex
+					     TeX-PDF-mode t)
 			       (setq TeX-source-correlate-start-server t)
 			       (add-to-list 'TeX-view-program-selection
                                             '(output-pdf "Zathura"))
@@ -406,16 +419,33 @@ point. "
   :config
   (add-hook `LaTeX-mode-hook #'evil-tex-mode))
 
+(use-package yasnippet
+  :config
+  (setq yas-snippet-dirs '("~/.my-emacs.d/snippets"))
+  (yas-reload-all)
+  (setq yas-triggers-in-field t))
+
+(use-package markdown-mode
+  :ensure t
+  :mode ("\\.md\\'" . gfm-mode)
+  :commands (markdown-mode gfm-mode)
+  :config
+  (setq markdown-command "pandoc -t html5"))
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
-   '(evil-magit evil-tex delight auctex magit rg rainbow-delimiters diminish persp-mode ivy-rich ivy-prescient prescient undo-tree which-key counsel openwith ivy expand-region avy use-package hc-zenburn-theme evil-surround)))
+   '(yascroll good-scroll markdown-mode yasnippet ess which-key use-package undo-fu rg rainbow-delimiters persp-mode openwith ivy-rich ivy-prescient hc-zenburn-theme expand-region evil-tex evil-surround evil-magit diminish delight counsel avy))
+ '(safe-local-variable-values
+   '((eval when
+	   (require 'rainbow-mode nil t)
+	   (rainbow-mode 1)))))
 (custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+			      ;; custom-set-faces was added by Custom.
+			      ;; If you edit it by hand, you could mess it up, so be careful.
+			      ;; Your init file should contain only one such instance.
+			      ;; If there is more than one, they won't work right.
+			      )
