@@ -17,6 +17,7 @@
   (require 'use-package))
 
 (use-package rainbow-delimiters
+  :ensure t
   :config
   (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
 
@@ -29,18 +30,22 @@
   (buffer-face-set 'default))
 (add-hook 'buffer-list-update-hook 'highlight-selected-window)
 
-(use-package diminish) ;gets rid of lighters with use-package :diminish
+(use-package diminish
+  :ensure t) ;gets rid of lighters with use-package :diminish
 
 (use-package delight
+  :ensure t
   :config
   (delight `((buffer-face-mode nil "face-remap"))))
 
 (use-package yascroll
+  :ensure t
   :config
   (global-yascroll-bar-mode 1)
   (setq yascroll:delay-to-hide nil))
 
-(use-package magit)
+(use-package magit
+  :ensure t)
 
 (use-package evil
   :ensure t
@@ -48,7 +53,8 @@
   :init
   (setq evil-search-module "evil-search")
   (setq evil-cross-lines t)
-  ;; (setq evil-respect-visual-line-mode t)
+  (setq evil-want-integration t) ;; recommended for evil-collection
+  (setq evil-want-keybinding nil) ;; required for evil-collection
   (setq evil-want-fine-undo t)
   (setq evil-undo-system 'undo-fu)
   :config
@@ -56,9 +62,18 @@
   (global-set-key (kbd "C-<tab>") 'evil-window-next)
   (global-set-key (kbd "<C-iso-lefttab>") 'evil-window-prev))
 
-(use-package evil-magit
-  :after magit evil)
+;; subsumed by evil-collection
+;; (use-package evil-magit
+;;   :after magit evil)
+
+(use-package evil-collection
+  :after evil
+  :ensure t
+  :config
+  (evil-collection-init))
+
 (use-package evil-surround
+  :ensure t
   :config
   (global-evil-surround-mode 1)
   (setq evil-surround-pairs-alist (delete  '(40 . ("( " . " )")) evil-surround-pairs-alist))
@@ -68,13 +83,8 @@
   (push  '(91 . ("[" . "]")) evil-surround-pairs-alist)
   (push  '(123 . ("{" . "}")) evil-surround-pairs-alist))
 
-;(use-package undo-tree
-;  :ensure t
-;  :diminish
-;  :config
-;  (global-undo-tree-mode))
-
 (use-package undo-fu
+  :ensure t
   :config
   ;(global-undo-tree-mode -1)
   (define-key evil-normal-state-map (kbd "C-/") 'undo-fu-only-undo)
@@ -83,7 +93,7 @@
 (use-package emacs
   :config 
   (load-theme 'zenburnt t)
-  (set-frame-font "Fira Code 11" nil t)
+  (set-frame-font "DejaVu Sans Mono 11" nil t)
   (menu-bar-mode -1)
   (tool-bar-mode -1)
   (scroll-bar-mode -1)
@@ -103,7 +113,14 @@
   (global-set-key (kbd "s-2") 'split-window-below)
   (global-set-key (kbd "s-3") 'split-window-right)
   (global-set-key (kbd "s-4") 'ctl-x-4-prefix)
+  (setq dired-listing-switches "-alh")
 )
+
+(use-package dired-du
+  :ensure t)
+
+(use-package vterm
+  :ensure t)
 
 (use-package avy
   :ensure t
@@ -134,7 +151,7 @@
 
 (use-package ivy
   :ensure t
-  :diminish
+  :diminish 
   :config
   (ivy-mode 1)
   (setq ivy-use-virtual-buffers t)
@@ -167,6 +184,11 @@
   :ensure t
   :config
   (setq counsel-switch-buffer-preview-virtual-buffers nil)
+  ;; (advice-add 'openwith-file-handler :around #'ben/ignore-errors)
+
+  ;; (defun ben/ignore-errors (&rest r)
+  ;;   (ignore-errors (apply (car r) (cdr r))))
+  
   (defun ben/file-fzf (dir)
     (let ((counsel-fzf-cmd "fd --hidden --type f --color never | fzf -f \"%s\"")
 	  (ben/fzf-dir-or-not nil)) ;result is a dir and needs a / at end
@@ -271,13 +293,16 @@
      ("g" ben/ag "grep this directory"))))
 
 (use-package ivy-rich
+  :ensure t
   :config
   (ivy-rich-mode 1))
 
 (use-package prescient
+  :ensure t
   :after (counsel))
 
 (use-package ivy-prescient
+  :ensure t
   :after (counsel)
   :config
   (ivy-prescient-mode))
@@ -289,9 +314,11 @@
   (which-key-mode))
 
 (use-package eldoc
+  :ensure t
   :diminish)
 
 (use-package doct
+  :ensure t
   :commands (doct))
 
 (use-package org
@@ -416,10 +443,12 @@ point. "
 			       (setq +latex-indent-level-item-continuation 2))))
 
 (use-package evil-tex
+  :ensure t
   :config
   (add-hook `LaTeX-mode-hook #'evil-tex-mode))
 
 (use-package yasnippet
+  :ensure t
   :config
   (setq yas-snippet-dirs '("~/.my-emacs.d/snippets"))
   (yas-reload-all)
@@ -432,20 +461,38 @@ point. "
   :config
   (setq markdown-command "pandoc -t html5"))
 
+;; TODO learn how to configure lsp-mode properly!
+(use-package lsp-mode
+  :ensure t
+  :commands (lsp lsp-deffered)
+  :hook (lsp-mode . lsp-enable-which-key-integration))
+
+(use-package lsp-ivy
+  :ensure t
+  :after lsp-mode)
+
+(use-package lsp-pyright
+  :ensure t
+  :hook
+  (python-mode . (lambda ()
+                   (require 'lsp-pyright)
+                   (lsp-deferred))))
+
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
-   '(yascroll good-scroll markdown-mode yasnippet ess which-key use-package undo-fu rg rainbow-delimiters persp-mode openwith ivy-rich ivy-prescient hc-zenburn-theme expand-region evil-tex evil-surround evil-magit diminish delight counsel avy))
+   '(evil-collection lsp-pyright lsp-ivy lsp-mode vterm dired-du yascroll good-scroll markdown-mode yasnippet ess which-key use-package undo-fu rg rainbow-delimiters persp-mode openwith ivy-rich ivy-prescient hc-zenburn-theme expand-region evil-tex evil-surround evil-magit diminish delight counsel avy))
  '(safe-local-variable-values
    '((eval when
 	   (require 'rainbow-mode nil t)
 	   (rainbow-mode 1)))))
 (custom-set-faces
-			      ;; custom-set-faces was added by Custom.
-			      ;; If you edit it by hand, you could mess it up, so be careful.
-			      ;; Your init file should contain only one such instance.
-			      ;; If there is more than one, they won't work right.
-			      )
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
